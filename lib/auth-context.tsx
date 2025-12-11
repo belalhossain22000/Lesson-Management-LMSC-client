@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!role) throw new Error("Role is required")
 
     // Backend expects uppercase role
-    const apiRole = role.toUpperCase()
+    const apiRole = role
 
     try {
       const res = await fetch(`${BASE_URL}/auth/simple-login`, {
