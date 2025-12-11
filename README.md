@@ -28,7 +28,7 @@ The project is intentionally kept simple and easy to run locally, as required in
 
 ```sh
 git clone https://github.com/belalhossain22000/Lesson-Management-LMSC-client.git
-cd Lesson-Management-LMSC-client.git
+cd Lesson-Management-LMSC-client
 ```
 
 ### **2. Install dependencies**
