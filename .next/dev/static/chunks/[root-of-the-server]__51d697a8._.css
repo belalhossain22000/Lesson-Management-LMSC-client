@@ -153,10 +153,6 @@
       --tw-backdrop-sepia: initial;
       --tw-duration: initial;
       --tw-ease: initial;
-      --tw-contain-size: initial;
-      --tw-contain-layout: initial;
-      --tw-contain-paint: initial;
-      --tw-contain-style: initial;
       --tw-content: "";
       --tw-animation-delay: 0s;
       --tw-animation-direction: normal;
@@ -2897,11 +2893,6 @@
   .ease-linear {
     --tw-ease: linear;
     transition-timing-function: linear;
-  }
-
-  .contain-paint {
-    --tw-contain-paint: paint;
-    contain: var(--tw-contain-size, ) var(--tw-contain-layout, ) var(--tw-contain-paint, ) var(--tw-contain-style, );
   }
 
   .fade-in-0 {
@@ -6544,26 +6535,6 @@
 }
 
 @property --tw-ease {
-  syntax: "*";
-  inherits: false
-}
-
-@property --tw-contain-size {
-  syntax: "*";
-  inherits: false
-}
-
-@property --tw-contain-layout {
-  syntax: "*";
-  inherits: false
-}
-
-@property --tw-contain-paint {
-  syntax: "*";
-  inherits: false
-}
-
-@property --tw-contain-style {
   syntax: "*";
   inherits: false
 }
