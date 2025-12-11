@@ -25,7 +25,7 @@ export function StudentDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(10)
+  const [limit, setLimit] = useState(9)
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL
 
