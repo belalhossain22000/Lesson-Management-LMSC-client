@@ -33,7 +33,9 @@ export function StudentDashboard() {
   // Fetch lessons
   // -----------------------
   useEffect(() => {
-    const fetchLessons = async () => {
+    const controller = new AbortController()
+
+    const debounceTimer = setTimeout(async () => {
       try {
         setLoading(true)
 
@@ -46,19 +48,28 @@ export function StudentDashboard() {
 
         const res = await fetch(`${baseUrl}/lessons?${params.toString()}`, {
           headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
         })
 
         const json = await res.json()
 
         setLessons(json.data.data)
-        setTotal(json.data.meta.total)   // <-- save total lessons for pagination
+        setTotal(json.data.meta.total)
+      } catch (error:any) {
+        if (error.name !== "AbortError") {
+          console.error("Fetch error:", error)
+        }
       } finally {
         setLoading(false)
       }
-    }
+    }, 300) // ← debounce delay
 
-    fetchLessons()
+    return () => {
+      clearTimeout(debounceTimer)
+      controller.abort()
+    }
   }, [searchTerm, page, limit])
+
 
 
   // -----------------------
