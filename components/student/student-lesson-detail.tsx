@@ -19,33 +19,64 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
 
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({})
   const [quizSubmitted, setQuizSubmitted] = useState(false)
+  const [quizResult, setQuizResult] = useState<any>(null)
+
   const [taskContent, setTaskContent] = useState("")
   const [taskSubmitted, setTaskSubmitted] = useState(false)
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL
 
   // ==========================
-  // FETCH LESSON DETAILS
+  // FETCH LESSON DETAIL + QUIZ DATA
   // ==========================
   useEffect(() => {
     const fetchLesson = async () => {
       try {
-        const res = await fetch(`${baseUrl}/lessons/${lessonId}?studentId=${user?.id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
+        const res = await fetch(
+          `${baseUrl}/lessons/${lessonId}?studentId=${user?.id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        )
 
         const json = await res.json()
         setLesson(json.data)
-      } catch (err) {
-        console.error("Lesson fetch error:", err)
       } finally {
         setLoading(false)
       }
     }
 
     if (lessonId) fetchLesson()
+  }, [lessonId])
+
+  // ==========================
+  // FETCH PREVIOUS QUIZ ATTEMPT
+  // ==========================
+  useEffect(() => {
+    const fetchQuizAttempts = async () => {
+      if (!user?.id) return
+
+      const res = await fetch(
+        `${baseUrl}/lessons/students/${user.id}/quizzes`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+
+      const json = await res.json()
+
+      // find attempt for THIS lesson
+      const attempt = json.data.find(
+        (a: any) => a.lessonId === lessonId
+      )
+
+      if (attempt) {
+        setQuizSubmitted(true)
+        setQuizResult(attempt)
+      }
+    }
+
+    fetchQuizAttempts()
   }, [lessonId])
 
   if (loading) return <p className="p-6">Loading lesson...</p>
@@ -55,30 +86,42 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
   const lessonTasks = lesson.lessonTasks || []
 
   // ==========================
-  // QUIZ SUBMIT HANDLER
+  // QUIZ SUBMIT HANDLER (REAL API)
   // ==========================
   const handleQuizSubmit = async () => {
-    const correctAnswers = quizQuestions.filter(
-      (q: any) => quizAnswers[q.id] === q.correctOption
-    ).length
+    try {
+      const res = await fetch(
+        `${baseUrl}/lessons/lesson/${lessonId}/quiz`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            studentId: user?.id,
+            answers: quizAnswers,
+          }),
+        }
+      )
 
-    const score = Math.round((correctAnswers / quizQuestions.length) * 100)
+      const json = await res.json()
 
-    setQuizSubmitted(true)
-
-    // Here you will call your quiz submission API
-    console.log("Quiz submitted with score:", score)
+      setQuizSubmitted(true)
+      setQuizResult(json.data)
+    } catch (error) {
+      console.error("Quiz submission error", error)
+    }
   }
 
   // ==========================
   // TASK SUBMIT HANDLER
+  // (API NOT IMPLEMENTED YET)
   // ==========================
   const handleTaskSubmit = async () => {
     setTaskSubmitted(true)
-
-    // Here you will call your task submission API
-    console.log("Task submitted:", taskContent)
   }
+
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -100,7 +143,7 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
         </TabsList>
 
         {/* ======================== VIDEO TAB ======================== */}
-        <TabsContent value="video" className="space-y-4">
+        <TabsContent value="video" className="space-y-4 cursor-pointer">
           <Card>
             <CardHeader>
               <CardTitle>Lesson Video</CardTitle>
@@ -121,27 +164,42 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
           </Card>
         </TabsContent>
 
-        {/* ======================== QUIZ TAB ======================== */}
+
+        {/* ================= QUIZ TAB ================= */}
         <TabsContent value="quiz" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Quiz</CardTitle>
-              <CardDescription>Answer all questions</CardDescription>
+              <CardDescription>
+                Answer all questions and submit to see your score
+              </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-6">
-              {quizSubmitted ? (
+              {/* ====== SHOW QUIZ RESULT IF SUBMITTED ====== */}
+              {quizSubmitted && quizResult ? (
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="font-semibold text-green-900">Quiz Submitted!</p>
+                  <p className="font-semibold text-green-900">
+                    Quiz Submitted Successfully!
+                  </p>
+                  <p className="text-sm text-green-800 mt-1">
+                    Score: <span className="font-bold">{quizResult.score}%</span>
+                  </p>
+                  <p className="text-sm text-green-700">
+                    Correct Answers: {quizResult.correctAnswers} /{" "}
+                    {quizResult.totalQuestions}
+                  </p>
                 </div>
               ) : (
                 <>
-                  {quizQuestions.map((q: any) => (
-                    <div key={q.id} className="space-y-3">
-                      <p className="font-semibold">{q.questionText}</p>
+                  {/* QUIZ QUESTIONS */}
+                  {quizQuestions.map((question: any) => (
+                    <div key={question.id} className="space-y-3">
+                      <p className="font-semibold">{question.questionText}</p>
+
                       <div className="space-y-2">
                         {["A", "B", "C", "D"].map((opt) => {
-                          const optionText = q[`option${opt}`]
+                          const optionText = question[`option${opt}`]
                           return (
                             <label
                               key={opt}
@@ -149,13 +207,13 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
                             >
                               <input
                                 type="radio"
-                                name={q.id}
+                                name={question.id}
                                 value={opt}
-                                checked={quizAnswers[q.id] === opt}
+                                checked={quizAnswers[question.id] === opt}
                                 onChange={(e) =>
                                   setQuizAnswers({
                                     ...quizAnswers,
-                                    [q.id]: e.target.value,
+                                    [question.id]: e.target.value,
                                   })
                                 }
                                 className="mr-3"
@@ -168,6 +226,7 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
                     </div>
                   ))}
 
+                  {/* SUBMIT BUTTON */}
                   <Button onClick={handleQuizSubmit} className="w-full mt-6">
                     Submit Quiz
                   </Button>
@@ -177,8 +236,9 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
           </Card>
         </TabsContent>
 
+
         {/* ======================== TASK TAB ======================== */}
-        <TabsContent value="task" className="space-y-4">
+        <TabsContent value="task" className="space-y-4 cursor-pointer">
           <Card>
             <CardHeader>
               <CardTitle>Task / Activity</CardTitle>

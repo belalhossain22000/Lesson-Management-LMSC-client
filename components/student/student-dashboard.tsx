@@ -181,7 +181,7 @@ export function StudentDashboard() {
                     </p>
 
                     <div className="mt-auto">
-                      <Button className="w-full" onClick={() => setSelectedLessonId(lesson.id)}>
+                      <Button className="w-full cursor-pointer" onClick={() => setSelectedLessonId(lesson.id)}>
                         Open Lesson
                       </Button>
                     </div>
