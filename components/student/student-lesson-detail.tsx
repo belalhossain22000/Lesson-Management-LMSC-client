@@ -20,6 +20,8 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({})
   const [quizSubmitted, setQuizSubmitted] = useState(false)
   const [quizResult, setQuizResult] = useState<any>(null)
+  const [taskSubmittedData, setTaskSubmittedData] = useState<any>(null)
+
 
   const [taskContent, setTaskContent] = useState("")
   const [taskSubmitted, setTaskSubmitted] = useState(false)
@@ -79,6 +81,33 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
     fetchQuizAttempts()
   }, [lessonId])
 
+  // ==========================
+  //  fetch task submissions result 
+  // ==========================
+  useEffect(() => {
+    const fetchTaskSubmissions = async () => {
+      const res = await fetch(
+        `${baseUrl}/lessons/students/${user?.id}/tasks`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+
+      const json = await res.json()
+
+      const currentTask = json.data.find(
+        (t: any) => t.lessonId === lessonId
+      )
+
+      if (currentTask) {
+        setTaskSubmittedData(currentTask)
+      }
+    }
+
+    fetchTaskSubmissions()
+  }, [lessonId])
+
+
   if (loading) return <p className="p-6">Loading lesson...</p>
   if (!lesson) return <p className="p-6">Lesson not found.</p>
 
@@ -116,11 +145,41 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
 
   // ==========================
   // TASK SUBMIT HANDLER
-  // (API NOT IMPLEMENTED YET)
   // ==========================
   const handleTaskSubmit = async () => {
-    setTaskSubmitted(true)
+    try {
+      const taskId = lessonTasks[0].id
+
+      const res = await fetch(
+        `${baseUrl}/lessons/tasks/submission/${taskId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            studentId: user?.id,
+            content: taskContent,
+          }),
+        }
+      )
+
+      const json = await res.json()
+
+      setTaskSubmittedData({
+        submissionId: json.data.submissionId,
+        taskId: json.data.taskId,
+        lessonId,
+        content: taskContent,
+        mark: null,
+        submittedAt: json.data.submittedAt,
+      })
+    } catch (error) {
+      console.error("Task submission error", error)
+    }
   }
+
 
 
   return (
@@ -238,27 +297,44 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
 
 
         {/* ======================== TASK TAB ======================== */}
-        <TabsContent value="task" className="space-y-4 cursor-pointer">
+        <TabsContent value="task" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Task / Activity</CardTitle>
             </CardHeader>
 
             <CardContent className="space-y-4">
-              {lessonTasks.length > 0 ? (
+              {!lessonTasks.length ? (
+                <p className="text-muted-foreground">No tasks for this lesson.</p>
+              ) : (
                 <>
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="font-semibold text-blue-900">{lessonTasks[0].taskText}</p>
+                    <p className="font-semibold text-blue-900">
+                      {lessonTasks[0].taskText}
+                    </p>
                   </div>
 
-                  {taskSubmitted ? (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  {/* IF SUBMITTED: SHOW RESULT RETURNED FROM BACKEND */}
+                  {taskSubmittedData ? (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-1">
                       <p className="font-semibold text-green-900">Task Submitted!</p>
+                      <p className="text-sm text-green-800">
+                        Submitted on:{" "}
+                        {new Date(taskSubmittedData.submittedAt).toLocaleString()}
+                      </p>
+
+                      <p className="text-sm text-green-800">
+                        Mark:{" "}
+                        {taskSubmittedData.mark === null
+                          ? "Awaiting teacher review"
+                          : `${taskSubmittedData.mark}/100`}
+                      </p>
                     </div>
                   ) : (
                     <>
+                      {/* TEXT INPUT */}
                       <textarea
-                        placeholder="Enter your response..."
+                        placeholder="Enter your response here..."
                         value={taskContent}
                         onChange={(e) => setTaskContent(e.target.value)}
                         className="w-full p-3 border rounded-lg min-h-32 font-sans"
@@ -274,8 +350,6 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
                     </>
                   )}
                 </>
-              ) : (
-                <p className="text-muted-foreground">No tasks for this lesson.</p>
               )}
             </CardContent>
           </Card>
