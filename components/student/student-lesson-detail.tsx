@@ -1,8 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { LESSONS, QUIZ_QUESTIONS, LESSON_TASKS, QUIZ_ATTEMPTS, TASK_SUBMISSIONS } from "@/lib/dummy-data"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -13,34 +12,71 @@ interface StudentLessonDetailProps {
 }
 
 export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailProps) {
-  const { currentStudent } = useAuth()
-  const lesson = LESSONS.find((l) => l.id === lessonId)
-  const quizQuestions = QUIZ_QUESTIONS.filter((q) => q.lessonId === lessonId)
-  const lessonTasks = LESSON_TASKS.filter((t) => t.lessonId === lessonId)
+  const { user, token } = useAuth()
+
+  const [lesson, setLesson] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({})
   const [quizSubmitted, setQuizSubmitted] = useState(false)
   const [taskContent, setTaskContent] = useState("")
   const [taskSubmitted, setTaskSubmitted] = useState(false)
 
-  if (!lesson) return null
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL
 
-  const studentQuizAttempt = QUIZ_ATTEMPTS.find((qa) => qa.lessonId === lessonId && qa.studentId === currentStudent?.id)
+  // ==========================
+  // FETCH LESSON DETAILS
+  // ==========================
+  useEffect(() => {
+    const fetchLesson = async () => {
+      try {
+        const res = await fetch(`${baseUrl}/lessons/${lessonId}?studentId=${user?.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
 
-  const studentTaskSubmission = TASK_SUBMISSIONS.find(
-    (ts) => ts.studentId === currentStudent?.id && lessonTasks[0] && ts.taskId === lessonTasks[0].id,
-  )
+        const json = await res.json()
+        setLesson(json.data)
+      } catch (err) {
+        console.error("Lesson fetch error:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const handleQuizSubmit = () => {
+    if (lessonId) fetchLesson()
+  }, [lessonId])
+
+  if (loading) return <p className="p-6">Loading lesson...</p>
+  if (!lesson) return <p className="p-6">Lesson not found.</p>
+
+  const quizQuestions = lesson.quizQuestions || []
+  const lessonTasks = lesson.lessonTasks || []
+
+  // ==========================
+  // QUIZ SUBMIT HANDLER
+  // ==========================
+  const handleQuizSubmit = async () => {
+    const correctAnswers = quizQuestions.filter(
+      (q: any) => quizAnswers[q.id] === q.correctOption
+    ).length
+
+    const score = Math.round((correctAnswers / quizQuestions.length) * 100)
+
     setQuizSubmitted(true)
-    // Calculate score
-    const correctAnswers = quizQuestions.filter((q) => quizAnswers[q.id] === q.correctOption).length
-    const score = (correctAnswers / quizQuestions.length) * 100
+
+    // Here you will call your quiz submission API
     console.log("Quiz submitted with score:", score)
   }
 
-  const handleTaskSubmit = () => {
+  // ==========================
+  // TASK SUBMIT HANDLER
+  // ==========================
+  const handleTaskSubmit = async () => {
     setTaskSubmitted(true)
+
+    // Here you will call your task submission API
     console.log("Task submitted:", taskContent)
   }
 
@@ -53,6 +89,7 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{lesson.title}</h1>
         <p className="text-muted-foreground">{lesson.description}</p>
+        <p className="text-sm mt-2 text-primary">Teacher: {lesson.teacher?.name}</p>
       </div>
 
       <Tabs defaultValue="video" className="w-full">
@@ -62,6 +99,7 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
           <TabsTrigger value="task">Task</TabsTrigger>
         </TabsList>
 
+        {/* ======================== VIDEO TAB ======================== */}
         <TabsContent value="video" className="space-y-4">
           <Card>
             <CardHeader>
@@ -77,46 +115,47 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                ></iframe>
+                />
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* ======================== QUIZ TAB ======================== */}
         <TabsContent value="quiz" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Quiz</CardTitle>
-              <CardDescription>Answer all questions and submit to see your score</CardDescription>
+              <CardDescription>Answer all questions</CardDescription>
             </CardHeader>
+
             <CardContent className="space-y-6">
-              {quizSubmitted && studentQuizAttempt ? (
+              {quizSubmitted ? (
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                   <p className="font-semibold text-green-900">Quiz Submitted!</p>
-                  <p className="text-sm text-green-800 mt-1">Your score: {studentQuizAttempt.score}%</p>
                 </div>
               ) : (
                 <>
-                  {quizQuestions.map((question) => (
-                    <div key={question.id} className="space-y-3">
-                      <p className="font-semibold">{question.questionText}</p>
+                  {quizQuestions.map((q: any) => (
+                    <div key={q.id} className="space-y-3">
+                      <p className="font-semibold">{q.questionText}</p>
                       <div className="space-y-2">
-                        {["A", "B", "C", "D"].map((option) => {
-                          const optionText = question[`option${option as "A" | "B" | "C" | "D"}`]
+                        {["A", "B", "C", "D"].map((opt) => {
+                          const optionText = q[`option${opt}`]
                           return (
                             <label
-                              key={option}
+                              key={opt}
                               className="flex items-center p-3 border rounded cursor-pointer hover:bg-muted"
                             >
                               <input
                                 type="radio"
-                                name={question.id}
-                                value={option}
-                                checked={quizAnswers[question.id] === option}
+                                name={q.id}
+                                value={opt}
+                                checked={quizAnswers[q.id] === opt}
                                 onChange={(e) =>
                                   setQuizAnswers({
                                     ...quizAnswers,
-                                    [question.id]: e.target.value,
+                                    [q.id]: e.target.value,
                                   })
                                 }
                                 className="mr-3"
@@ -128,6 +167,7 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
                       </div>
                     </div>
                   ))}
+
                   <Button onClick={handleQuizSubmit} className="w-full mt-6">
                     Submit Quiz
                   </Button>
@@ -137,11 +177,13 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
           </Card>
         </TabsContent>
 
+        {/* ======================== TASK TAB ======================== */}
         <TabsContent value="task" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Task/Activity</CardTitle>
+              <CardTitle>Task / Activity</CardTitle>
             </CardHeader>
+
             <CardContent className="space-y-4">
               {lessonTasks.length > 0 ? (
                 <>
@@ -149,25 +191,24 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
                     <p className="font-semibold text-blue-900">{lessonTasks[0].taskText}</p>
                   </div>
 
-                  {taskSubmitted && studentTaskSubmission ? (
+                  {taskSubmitted ? (
                     <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                       <p className="font-semibold text-green-900">Task Submitted!</p>
-                      <p className="text-sm text-green-800 mt-1">
-                        Submitted on: {new Date(studentTaskSubmission.submittedAt).toLocaleDateString()}
-                      </p>
-                      {studentTaskSubmission.mark && (
-                        <p className="text-sm text-green-800">Mark: {studentTaskSubmission.mark}/100</p>
-                      )}
                     </div>
                   ) : (
                     <>
                       <textarea
-                        placeholder="Enter your response here..."
+                        placeholder="Enter your response..."
                         value={taskContent}
                         onChange={(e) => setTaskContent(e.target.value)}
                         className="w-full p-3 border rounded-lg min-h-32 font-sans"
                       />
-                      <Button onClick={handleTaskSubmit} className="w-full" disabled={!taskContent.trim()}>
+
+                      <Button
+                        onClick={handleTaskSubmit}
+                        className="w-full"
+                        disabled={!taskContent.trim()}
+                      >
                         Submit Task
                       </Button>
                     </>
@@ -179,6 +220,7 @@ export function StudentLessonDetail({ lessonId, onBack }: StudentLessonDetailPro
             </CardContent>
           </Card>
         </TabsContent>
+
       </Tabs>
     </div>
   )
