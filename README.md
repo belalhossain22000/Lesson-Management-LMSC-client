@@ -1,303 +1,167 @@
 
 
-# **LMSC E-Learning Platform**
 
-A full-stack Learning Management System (LMS) built with:
 
-* **Backend:** Node.js, Express.js, Prisma ORM, PostgreSQL
-* **Frontend:** Next.js (App Router), TypeScript, ShadCN UI
-* **Authentication:** JWT-based login (Student + Teacher roles)
-* **Features:** Lessons, Quizzes, Tasks, Submissions, Teacher Dashboard, Student Dashboard
+# 📘 **LMSC E-Learning Frontend**
+
+This is the **frontend client** for the LMSC Learning Management System.
+It implements both the **Student** and **Teacher** flows required in the technical task, with a focus on clarity, usability, and correct API integration.
 
 ---
 
-# 🚀 **Features**
+## 🛠 **Tech Stack**
 
-### 👨‍🎓 Student Side
+* **Next.js 14 (App Router)**
+* **TypeScript**
+* **React Hooks**
+* **ShadCN UI + TailwindCSS**
+* **JWT-based simple authentication**
+* **REST API integration using fetch**
 
-* Login as **student**
-* View available lessons (pagination + search)
-* Watch lesson videos
-* Take quizzes (auto-graded)
-* Submit tasks
-* View quiz score, task submission result
-* Progress statistics
-
-### 👩‍🏫 Teacher Side
-
-* Login as **teacher**
-* View teacher-specific lessons
-* Lesson engagement dashboard
-* View student quiz attempts
-* View + grade student task submissions
-* Manage lesson analytics
-
-### 🛠 System Features
-
-* REST API
-* Prisma ORM migrations
-* PostgreSQL database
-* Seed script for test data
-* Role-based access
-* Real-time computed stats for dashboards
+The project is intentionally kept simple and easy to run locally, as required in the task instructions.
 
 ---
 
-# 📦 **Tech Stack**
+## 🚀 **Setup & Run Instructions**
 
-| Layer            | Technology                                         |
-| ---------------- | -------------------------------------------------- |
-| Frontend         | Next.js (App Router), React, TypeScript, ShadCN UI |
-| Backend          | Express.js, TypeScript                             |
-| Database         | PostgreSQL                                         |
-| ORM              | Prisma                                             |
-| Auth             | JWT                                                |
-| Deployment-ready | Yes                                                |
+### **1. Clone the repo**
 
----
-
-# ⚙️ **Prerequisites**
-
-Make sure you have installed:
-
-* **Node.js 18+**
-* **PostgreSQL 13+**
-* **npm or yarn**
-* **A `.env` file configured** (see below)
-
----
-
-# 🔧 **Environment Variables**
-
-Create `.env` in the backend root:
-
-```env
-DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/lmsc_db?schema=public"
-
-JWT_SECRET="super-secret-key"
-JWT_EXPIRES_IN="30d"
-PORT=5000
+```sh
+git clone https://github.com/belalhossain22000/Lesson-Management-LMSC-client.git
+cd Lesson-Management-LMSC-client.git
 ```
 
-Create `.env.local` in the Next.js frontend root:
+### **2. Install dependencies**
 
-```env
-NEXT_PUBLIC_API_URL="http://localhost:5000/api/v1"
-```
-
----
-
-# 🗃 **Database Setup**
-
-### 1️⃣ Install dependencies
-
-```bash
+```sh
 npm install
 ```
 
-### 2️⃣ Generate Prisma Client
+### **3. Add environment variable**
 
-```bash
-npx prisma generate
+Create `.env.local`:
+
+```env
+NEXT_PUBLIC_API_URL=https://lesson-management-lmsc-server.vercel.app/api/v1
 ```
 
-### 3️⃣ Run migrations
+### **4. Run the app**
 
-```bash
-npx prisma migrate dev --name init
-```
-
----
-
-# 🌱 **Seed the Database**
-
-The project includes a custom seed script that:
-
-* Clears old data
-* Creates teachers + students
-* Creates **10 lessons per teacher**
-* Generates quizzes + tasks automatically
-
-Run:
-
-```bash
-npm run seed
-```
-
-Or depending on package.json:
-
-```bash
-npx prisma db seed
-```
-
----
-
-# ▶️ **Run Backend Server**
-
-```bash
+```sh
 npm run dev
 ```
 
-Server runs on:
+The app will run at:
 
-```
-http://localhost:5000
-```
+👉 [http://localhost:3000](http://localhost:3000)
 
 ---
 
-# ▶️ **Run Next.js Frontend**
+## 🔑 **Sample Login Instructions**
 
-```bash
-npm run dev
-```
+For this assignment, authentication is intentionally **minimal**, as allowed by the guidelines.
 
-Frontend runs on:
+### **Student Login**
 
-```
-http://localhost:3000
-```
+1. Click **"Login as Student"**
+2. Choose one student from the list, e.g.:
 
----
+   * `studentA@example.com`
+   * `studentB@example.com`
 
-# 📚 **Folder Structure (Backend)**
+### **Teacher Login**
 
-```
-src/
- ├── app/
- │    ├── modules/
- │    │    ├── lessons/
- │    │    ├── quizzes/
- │    │    ├── students/
- │    │    └── teachers/
- │    ├── middlewares/
- │    └── utils/
- ├── shared/
- │    └── prisma.ts
- └── server.ts
-prisma/
- ├── schema.prisma
- └── seed.ts
-```
+1. Click **"Login as Teacher"**
+2. Choose one teacher from the list, e.g.:
+
+   * `alice@lmsc.org`
+   * `charlie@lmsc.org`
+
+A JWT token is returned by the backend and stored in memory via a custom `AuthContext`.
 
 ---
 
-# 📚 **Folder Structure (Frontend)**
+## 🧪 **Test Commands**
 
+The task does not require automated tests, but if added later:
+
+```sh
+npm run test
 ```
-app/
- ├── (student)/
- │     ├── dashboard/
- │     └── lessons/
- ├── (teacher)/
- │     ├── dashboard/
- │     └── lessons/
- ├── login/
- └── layout.tsx
-lib/
- ├── auth-context.tsx
- └── api-client.ts
-components/ui/
-```
+
+Current implementation focuses on clarity and correct flow behavior.
 
 ---
 
-# 🔐 **Authentication Flow**
+## 📌 **Features Implemented**
 
-### Student Login (`POST /auth/simple-login`)
+### 👨‍🎓 Student
 
-Body example:
+* View all lessons (with search + pagination)
+* Open lesson detail
+* Watch lesson video
+* Take quiz → submit → receive score
+* Submit task
+* Dashboard with:
 
-```json
-{
-  "email": "studentA@example.com",
-  "role": "student"
-}
-```
+  * Total lessons
+  * Completed lessons
+  * Average score
+  * Learning hours (placeholder)
 
-Returns JWT with:
+### 👩‍🏫 Teacher
 
-```json
-{
-  "id",
-  "name",
-  "email",
-  "role"
-}
-```
+* View teacher-specific lessons
+* Dashboard stats:
 
-Frontend stores token in memory inside `AuthContext`.
+  * Total lessons
+  * Students engaged
+  * Quiz submissions
+  * Task submissions
+* Engagement screen:
 
----
+  * Viewed status
+  * Quiz submitted + score
+  * Task submitted + mark
+* View quiz results
+* View + grade task submissions
 
-# 🧠 **Assumptions**
-
-1. Each teacher must have **at least 10 lessons**.
-2. Each lesson must contain:
-
-   * 1 video
-   * 5 quiz questions
-   * 1 task
-3. A student can submit:
-
-   * 1 quiz attempt per lesson
-   * 1 task submission per lesson
-4. Teachers can:
-
-   * View all engagement
-   * Update task marks anytime
-5. Lessons, quizzes, and tasks are already created by seeding.
-6. Pagination and search are handled on server side.
+All flows work end-to-end with the backend.
 
 ---
 
-# 🧪 **Testing Accounts**
+## assumptions
 
-### 👩‍🏫 Teachers
+Since the task intentionally allows flexibility, the following assumptions were made:
 
-```
-alice@lmsc.org
-bob@lmsc.org
-charlie@lmsc.org
-diana@lmsc.org
-edward@lmsc.org
-```
-
-### 👨‍🎓 Students
-
-```
-studentA@example.com
-studentB@example.com
-studentC@example.com
-studentD@example.com
-studentE@example.com
-```
-
-All roles use simple login (no password).
+1. Simple login (`email + role`) is acceptable—no passwords required.
+2. Students can make **one quiz attempt** and **one task submission** per lesson.
+3. Viewing a lesson counts as “engagement viewed.”
+4. Teacher can update a task mark anytime and the latest mark is final.
+5. Pagination is server-driven (`page`, `limit`) and defaults to 10.
+6. Search applies to lesson title and description.
+7. UI does not need pixel-perfect design; usability is prioritized.
+8. Stats such as learning hours are placeholders unless provided by the backend.
+9. Teacher sees only lessons that belong to them.
+10. Lesson content (videos/quizzes/tasks) is seeded and static for this assignment.
 
 ---
 
-# 🚀 Deployment Notes
+## 🚧 Known Limitations / What I’d Do With More Time
 
-* For production, set:
-
-  * `DATABASE_URL` to cloud PostgreSQL
-  * Use HTTPS
-  * Set long JWT secrets
-* Prisma migrations must run before server starts.
+* Add unit tests and integration tests.
+* Improve mobile responsiveness.
+* Persist login session using cookies instead of in-memory context.
+* Add skeleton loaders and better error UI states.
+* Add lesson creation and editing tools for teachers.
+* Improve accessibility and keyboard navigation.
+* Add filtering by completion, subject, or teacher.
 
 ---
 
-# 🧩 **Common Commands**
+## 📬 Submission
 
-| Action                 | Command                    |
-| ---------------------- | -------------------------- |
-| Reset DB               | `npx prisma migrate reset` |
-| View DB UI             | `npx prisma studio`        |
-| Generate Prisma Client | `npx prisma generate`      |
-| Seed Data              | `npm run seed`             |
-
-
-
+A public GitHub repository is provided along with this README.
+All setup instructions and assumptions needed to run and evaluate the task are included as required.
 
 
